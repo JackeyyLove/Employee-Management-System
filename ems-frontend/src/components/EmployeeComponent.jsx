@@ -1,18 +1,22 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { addEmployee , getEmployee, updateEmployee} from "../services/EmployeeService"
+import { getAllDepartments } from "../services/DepartmentService"
 function EmployeeComponent() { 
     // Store elements get from form 
     const [firstName, setFirstName] = useState('')
     const [lastName, setLastName] = useState('')
     const [email, setEmail] = useState('')
+    const [departmentId, setDepartmentId] = useState('')
+    const [departments, setDepartment] = useState([])
     const navigator = useNavigate();
 
     // Store errors from adding form 
     const [errors, setErrors] = useState({ 
         firstName: '',
         lastName: '',
-        email: ''
+        email: '', 
+        department: ''
     })
     // Store parameter id, which represents for update page
     const {id} = useParams();
@@ -24,11 +28,21 @@ function EmployeeComponent() {
                 setFirstName(response.data.firstName)
                 setLastName(response.data.lastName)
                 setEmail(response.data.email)
+                setDepartmentId(response.data.departmentId)
             }).catch(error => {
                 console.error(error);
             })
         }
     },[id])
+
+    // Get all departments and store to department
+    useEffect(() => { 
+        getAllDepartments().then((res) => { 
+            setDepartment(res.data);
+        }).catch(error => {
+            console.error(error); 
+        })
+    })
     // Function to handle form submit
     function handleFirstName(e) { 
         setFirstName(e.target.value)
@@ -42,7 +56,7 @@ function EmployeeComponent() {
     function saveEmployee(e) { 
         e.preventDefault();
         if (validatedForm()) { 
-            const employee = {firstName, lastName, email}
+            const employee = {firstName, lastName, email, departmentId}
             if (id) { // if it has ID, which means that we are going to update info
                 updateEmployee(id, employee).then(res =>{
                     console.log(res)
@@ -87,6 +101,12 @@ function EmployeeComponent() {
             errorsCopy.email = 'Email is required'; 
             valid = false;
         }
+        if (departmentId) { 
+            errorsCopy.department = '';
+        } else  {
+            errorsCopy.department = 'Select department'; 
+            valid = false; 
+        }
         setErrors(errorsCopy)
         return valid; 
     }
@@ -113,6 +133,18 @@ function EmployeeComponent() {
                                 <label htmlFor="" className="form-label">Email</label>
                                 <input type = 'text' placeholder="Enter Employee Email" name = 'email' value={email} className={`form-control ${errors.email ? 'is-invalid' : ''}`} onChange={handleEmail}></input>
                                 {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+                            </div>
+                            <div className="form-group mb-2">
+                                <label htmlFor="" className="form-label">Department</label>
+                                <select className={`form-control ${errors.department ? 'is-invalid' : ''}`}  value = {departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
+                                    <option value="Select Department">Select Department</option>
+                                    {
+                                        departments.map(department => 
+                                        <option key={department.id} value = {department.id}>{department.departmentName}</option>
+                                        )
+                                    }
+                                </select>
+                                {errors.department && <div className="invalid-feedback">{errors.department}</div>}
                             </div>
                             <button className="btn btn-success" onClick={saveEmployee}>Submit</button>
                         </form>
